@@ -25,7 +25,7 @@ async function proxyToOracle(context, options) {
       message: 'Could not reach Oracle backend from Cloudflare Pages Function.',
       error: error instanceof Error ? error.message : 'unknown fetch error',
       target: `${baseUrl.replace(/\/+$/, '')}${options.path}`,
-    }, { status: 502 });
+    }, { status: 200 });
   }
   const raw = await upstream.text();
   let data;
@@ -34,7 +34,7 @@ async function proxyToOracle(context, options) {
   } catch {
     data = { message: raw };
   }
-  return Response.json(data, { status: upstream.ok ? 200 : 502 });
+  return Response.json(data, { status: 200 });
 }
 
 async function readJsonBody(request) {
