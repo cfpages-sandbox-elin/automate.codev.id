@@ -1,0 +1,15 @@
+This is the fixed Cloudflare Pages static-export package.
+
+Use Cloudflare Pages settings:
+- Build command: npx next build
+- Build output directory: out
+
+This package contains:
+- next.config.ts with output: "export"
+- functions/api/toolkit/health.ts
+- functions/api/toolkit/smoke-test.ts
+- no src/proxy.ts
+- no src/app/api/ Next route handlers
+- no src/app/sign-in/[[...sign-in]] catch-all route
+
+Created on 2026-06-14 UTC.

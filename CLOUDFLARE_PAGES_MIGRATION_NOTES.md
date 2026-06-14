@@ -88,3 +88,35 @@ Start with a tiny allowlist:
 - `POST /media/transcribe`
 
 Each endpoint should validate input, rate-limit if practical, and call the local toolkit API with the real API key server-side.
+
+
+## 2026-06-14 fixed static Pages package
+
+This package was updated for the simplest Cloudflare Pages deployment path:
+
+- `next.config.ts` uses `output: "export"`, so `npx next build` creates the `out/` directory Cloudflare Pages expects.
+- Next middleware/proxy was removed for static export.
+- Next API route handlers were replaced by Cloudflare Pages Functions under `functions/api/...`.
+- The dashboard is client-side gated with Clerk `SignedIn` / `SignedOut` components.
+
+Cloudflare Pages settings:
+
+```text
+Build command: npx next build
+Build output directory: out
+```
+
+Required Cloudflare Pages environment variables:
+
+```text
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
+CLERK_SECRET_KEY=...
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/
+NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/
+ORACLE_BACKEND_BASE_URL=https://api.codev.id
+ORACLE_BACKEND_PROXY_SECRET=<copy CODEV_API_PROXY_TOKEN from /home/ubuntu/codev-api-proxy/.env>
+```
+
+Do not expose `ORACLE_BACKEND_PROXY_SECRET` as a `NEXT_PUBLIC_` variable.

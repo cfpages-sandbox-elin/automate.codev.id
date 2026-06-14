@@ -1,4 +1,3 @@
-import { UserButton } from '@clerk/nextjs';
 import { DashboardActions } from './DashboardActions';
 
 const toolCards = [
@@ -32,17 +31,17 @@ export default function Home() {
           <p className="eyebrow">NCA Toolkit Web Studio</p>
           <h1>Media automation without wrestling n8n HTTP nodes.</h1>
           <p className="heroText">
-            This UI keeps the toolkit API key and R2 secrets on the server, then gives you safe buttons and forms in the browser.
+            This Cloudflare Pages UI talks to a narrow Oracle backend proxy. Secrets stay server-side; the raw toolkit API stays private.
           </p>
         </div>
-        <UserButton />
+        <a className="buttonLike" href="https://api.codev.id/healthz" target="_blank" rel="noreferrer">API health</a>
       </header>
 
       <section className="grid three">
         <div className="statCard">
           <span className="statLabel">Raw API exposure</span>
           <strong>Localhost only</strong>
-          <p>Toolkit API stays on 127.0.0.1:8088; browser users call this web app instead.</p>
+          <p>Toolkit API stays on 127.0.0.1:8088. Cloudflare Pages calls the narrow api.codev.id proxy.</p>
         </div>
         <div className="statCard">
           <span className="statLabel">Storage</span>
@@ -51,8 +50,8 @@ export default function Home() {
         </div>
         <div className="statCard">
           <span className="statLabel">Access</span>
-          <strong>Clerk login</strong>
-          <p>Shared codev.id application login protects the UI and server-side API proxy routes.</p>
+          <strong>Protected backend</strong>
+          <p>Pages Functions use a server-side bearer token. Do not expose that token to browser JavaScript.</p>
         </div>
       </section>
 
@@ -80,12 +79,11 @@ export default function Home() {
       </section>
 
       <section className="panel advice">
-        <p className="eyebrow">Optimization suggestions I will keep checking</p>
+        <p className="eyebrow">Safety reminders</p>
         <ul>
-          <li>Add Docker log rotation before heavy use so logs do not fill the 45 GB boot disk.</li>
-          <li>Keep queue length conservative until real media job RAM and disk usage is measured.</li>
-          <li>Prefer private presigned links for sensitive outputs; public R2 links are convenient but anyone with the URL can view them.</li>
-          <li>Hide dangerous endpoints, especially Python code execution, unless you explicitly approve them later.</li>
+          <li>The raw Python execution endpoint remains hidden.</li>
+          <li>Only narrow allowlisted API proxy routes should be exposed.</li>
+          <li>Prefer private presigned links later for sensitive outputs.</li>
         </ul>
       </section>
     </main>
