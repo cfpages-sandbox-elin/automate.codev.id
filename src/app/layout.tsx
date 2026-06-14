@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'NCA Toolkit Web Studio',
-  description: 'A noob-friendly web UI for the No-Code Architects Toolkit.',
+  title: 'Automate Studio',
+  description: 'Turn media links into transcripts, clips, thumbnails, MP3 files, and useful file details.',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

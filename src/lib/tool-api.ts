@@ -21,12 +21,12 @@ export type ApiResult = {
 };
 
 export const toolTabs: ToolTab[] = [
-  { id: 'status', label: 'Status', description: 'Check backend and R2 storage.' },
-  { id: 'metadata', label: 'Metadata', description: 'Read duration, codecs, size, and streams.' },
-  { id: 'mp3', label: 'To MP3', description: 'Convert video or audio into an MP3 file.' },
-  { id: 'transcribe', label: 'Transcribe', description: 'Create text/SRT transcript files with Whisper.' },
-  { id: 'thumbnail', label: 'Thumbnail', description: 'Grab a JPG/PNG thumbnail from a video time.' },
-  { id: 'trim', label: 'Trim', description: 'Cut a video between start and end times.' },
+  { id: 'status', label: 'Check link', description: 'Make sure the app is ready before you start.' },
+  { id: 'metadata', label: 'File details', description: 'See length, size, and basic media info.' },
+  { id: 'mp3', label: 'Make MP3', description: 'Turn video or audio into an MP3 file.' },
+  { id: 'transcribe', label: 'Transcript', description: 'Create text or subtitle files.' },
+  { id: 'thumbnail', label: 'Thumbnail', description: 'Save an image from a video.' },
+  { id: 'trim', label: 'Trim video', description: 'Cut a shorter clip from a video.' },
 ];
 
 const numericFields = new Set(['sample_rate', 'second', 'video_crf', 'words_per_line']);

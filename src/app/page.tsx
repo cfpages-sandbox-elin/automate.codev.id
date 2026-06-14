@@ -1,47 +1,46 @@
+import { CheckCircle2, Clock3, FileVideo2 } from 'lucide-react';
 import { DashboardActions } from './DashboardActions';
+import { ThemeToggle } from './ThemeToggle';
 
 export default function Home() {
   return (
     <main className="shell">
       <header className="topbar">
         <div>
-          <p className="eyebrow">NCA Toolkit Web Studio</p>
-          <h1>Media automation from one compact dashboard.</h1>
+          <p className="eyebrow">Automate Studio</p>
+          <h1>Turn media links into useful files.</h1>
           <p className="heroText">
-            Pick a tab, paste a public media URL, and let the private Oracle toolkit do the heavy work. API keys and R2 secrets stay server-side.
+            Paste a video or audio link, choose what you want, and get a ready-to-use result. No technical setup needed.
           </p>
         </div>
-        <a className="buttonLike" href="https://api.codev.id/healthz" target="_blank" rel="noreferrer">API health</a>
+        <ThemeToggle />
       </header>
 
-      <section className="grid three">
-        <div className="statCard">
-          <span className="statLabel">Available now</span>
-          <strong>6 tabs</strong>
-          <p>Status, metadata, MP3 conversion, transcription, thumbnail, and video trim workflows.</p>
+      <section className="featureStrip" aria-label="What this app can help with">
+        <div className="featureCard">
+          <span className="featureIcon"><FileVideo2 aria-hidden="true" size={20} /></span>
+          <div>
+            <strong>Convert and trim media</strong>
+            <p>Make MP3 files, cut clips, or grab a thumbnail from a video.</p>
+          </div>
         </div>
-        <div className="statCard">
-          <span className="statLabel">Storage</span>
-          <strong>Cloudflare R2</strong>
-          <p>File outputs return R2 links when the underlying toolkit produces a cloud result.</p>
+        <div className="featureCard">
+          <span className="featureIcon"><CheckCircle2 aria-hidden="true" size={20} /></span>
+          <div>
+            <strong>Create useful outputs</strong>
+            <p>Generate transcripts, subtitles, download links, and file details.</p>
+          </div>
         </div>
-        <div className="statCard">
-          <span className="statLabel">Safety</span>
-          <strong>Allowlisted API</strong>
-          <p>The raw toolkit and dangerous Python execution endpoint stay hidden behind the narrow backend proxy.</p>
+        <div className="featureCard">
+          <span className="featureIcon"><Clock3 aria-hidden="true" size={20} /></span>
+          <div>
+            <strong>Built for quick checks</strong>
+            <p>Start with a simple link check before running longer jobs.</p>
+          </div>
         </div>
       </section>
 
       <DashboardActions />
-
-      <section className="panel advice">
-        <p className="eyebrow">Tips</p>
-        <ul>
-          <li>Use direct public media URLs. Private Google Drive, YouTube pages, or login-only URLs may fail.</li>
-          <li>Start with metadata before long conversions so you know the file is reachable.</li>
-          <li>Transcription and video trim can take longer than health checks because the server downloads and processes media.</li>
-        </ul>
-      </section>
     </main>
   );
 }

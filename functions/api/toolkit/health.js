@@ -36,14 +36,4 @@ async function proxyToOracle(context, options) {
   }
   return Response.json(data, { status: 200 });
 }
-
-async function readJsonBody(request) {
-  try {
-    const body = await request.json();
-    return body && typeof body === 'object' ? body : {};
-  } catch {
-    return {};
-  }
-}
-
 export const onRequestGet = async (context) => proxyToOracle(context, { path: '/nca/toolkit/health' });

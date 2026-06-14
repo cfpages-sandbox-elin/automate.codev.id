@@ -4,12 +4,12 @@ export default function SignUpPage() {
   return (
     <main className="authShell">
       <section className="authCard">
-        <p className="eyebrow">Cloudflare Pages build</p>
-        <h1>Sign-up page placeholder</h1>
+        <p className="eyebrow">Coming soon</p>
+        <h1>Accounts are not open yet.</h1>
         <p className="muted">
-          This static Cloudflare Pages package is optimized for easiest deployment first. Add Clerk/Cloudflare Access back after the Pages deployment is stable.
+          For now, use the studio directly. Later, accounts will help you save history, organize outputs, and manage private workspaces.
         </p>
-        <Link href="/">Back to dashboard</Link>
+        <Link className="buttonLike" href="/">Open Automate Studio</Link>
       </section>
     </main>
   );

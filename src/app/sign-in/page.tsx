@@ -4,13 +4,12 @@ export default function SignInPage() {
   return (
     <main className="authShell">
       <section className="authCard">
-        <p className="eyebrow">Cloudflare Pages build</p>
-        <h1>Sign-in page placeholder</h1>
+        <p className="eyebrow">Welcome back</p>
+        <h1>Sign in is not required yet.</h1>
         <p className="muted">
-          This static Cloudflare Pages package removes the Next.js server-side Clerk middleware so it can deploy cleanly to Pages.
-          Backend calls are still protected by the server-side Pages Function secret.
+          You can use Automate Studio from the home page. Account access will be added later when saved history and private workspaces are ready.
         </p>
-        <Link href="/">Back to dashboard</Link>
+        <Link className="buttonLike" href="/">Open Automate Studio</Link>
       </section>
     </main>
   );
