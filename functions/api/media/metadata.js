@@ -1,6 +1,7 @@
 async function proxyToOracle(context, options) {
-  const baseUrl = context.env.ORACLE_BACKEND_BASE_URL || 'https://api.codev.id';
-  const token = context.env.ORACLE_BACKEND_PROXY_SECRET;
+  const env = context.env || {};
+  const baseUrl = env.ORACLE_BACKEND_BASE_URL || 'https://api.codev.id';
+  const token = env.ORACLE_BACKEND_PROXY_SECRET;
   if (!token) {
     return Response.json({ ok: false, status: 500, message: 'Cloudflare Pages backend secret is missing.' }, { status: 500 });
   }
