@@ -10,11 +10,22 @@ async function proxyToOracle(context, options) {
     headers['content-type'] = 'application/json';
     body = JSON.stringify(options.body);
   }
-  const upstream = await fetch(`${baseUrl.replace(/\/+$/, '')}${options.path}`, {
-    method: options.method ?? 'GET',
-    headers,
-    body,
-  });
+  let upstream;
+  try {
+    upstream = await fetch(`${baseUrl.replace(/\/+$/, '')}${options.path}`, {
+      method: options.method ?? 'GET',
+      headers,
+      body,
+    });
+  } catch (error) {
+    return Response.json({
+      ok: false,
+      status: 502,
+      message: 'Could not reach Oracle backend from Cloudflare Pages Function.',
+      error: error instanceof Error ? error.message : 'unknown fetch error',
+      target: `${baseUrl.replace(/\/+$/, '')}${options.path}`,
+    }, { status: 502 });
+  }
   const raw = await upstream.text();
   let data;
   try {
