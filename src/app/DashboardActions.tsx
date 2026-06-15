@@ -23,7 +23,7 @@ import {
 import { useMemo, useState } from 'react';
 import type { FormEvent, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react';
 import { buildPayload, extractResultLinks, normalizeApiResult, toolTabs } from '@/lib/tool-api';
-import type { ApiResult, ToolTabId } from '@/lib/tool-api';
+import type { ApiResult, ToolGroup, ToolTabId } from '@/lib/tool-api';
 
 type LoadingKey = ToolTabId | null;
 type ResultMap = Partial<Record<ToolTabId, ApiResult>>;
@@ -100,6 +100,7 @@ const apiPaths: Record<Exclude<ToolTabId, 'status'>, string> = {
 export function DashboardActions() {
   const { getToken } = useAuth();
   const [activeTab, setActiveTab] = useState<ToolTabId>('status');
+  const [activeCategory, setActiveCategory] = useState<ToolGroup>('Quick tools');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [results, setResults] = useState<ResultMap>({});
   const [loading, setLoading] = useState<LoadingKey>(null);
@@ -143,13 +144,25 @@ export function DashboardActions() {
 
   const visibleTabs = useMemo(() => toolTabs.filter((tab) => showAdvanced || !tab.advanced), [showAdvanced]);
   const groupedTabs = useMemo(() => {
-    const groups = new Map<string, typeof toolTabs>();
+    const groups = new Map<ToolGroup, typeof toolTabs>();
     for (const tab of visibleTabs) groups.set(tab.group, [...(groups.get(tab.group) ?? []), tab]);
     return Array.from(groups.entries());
   }, [visibleTabs]);
-  const activeMeta = useMemo(() => toolTabs.find((tab) => tab.id === activeTab) ?? toolTabs[0], [activeTab]);
-  const currentResult = results[activeTab];
-  const ActiveIcon = toolIcons[activeTab];
+  const selectedCategory = groupedTabs.some(([group]) => group === activeCategory) ? activeCategory : groupedTabs[0]?.[0] ?? 'Quick tools';
+  const categoryTools = useMemo(() => visibleTabs.filter((tab) => tab.group === selectedCategory), [selectedCategory, visibleTabs]);
+  const activeMeta = useMemo(() => {
+    const visibleActive = visibleTabs.find((tab) => tab.id === activeTab);
+    return visibleActive ?? categoryTools[0] ?? visibleTabs[0] ?? toolTabs[0];
+  }, [activeTab, categoryTools, visibleTabs]);
+  const selectedToolId = activeMeta.id;
+  const currentResult = results[selectedToolId];
+  const ActiveIcon = toolIcons[selectedToolId];
+
+  function selectCategory(group: ToolGroup) {
+    setActiveCategory(group);
+    const firstTool = visibleTabs.find((tab) => tab.group === group);
+    if (firstTool) setActiveTab(firstTool.id);
+  }
 
   return (
     <section className="panel toolPanel" aria-labelledby="tool-heading">
@@ -164,23 +177,33 @@ export function DashboardActions() {
         </button>
       </div>
 
-      <div className="tabShell">
-        <div className="tabList groupedTabs" role="tablist" aria-label="Media tools">
-          {groupedTabs.map(([group, tabs]) => (
-            <div className="tabGroup" key={group}>
-              <p className="tabGroupTitle">{group}</p>
-              {tabs.map((tab) => {
-                const Icon = toolIcons[tab.id];
-                const selected = activeTab === tab.id;
-                return (
-                  <button key={tab.id} className={selected ? 'tabButton active' : 'tabButton'} onClick={() => setActiveTab(tab.id)} role="tab" aria-selected={selected} type="button">
-                    <Icon aria-hidden="true" size={20} />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
+      <div className="categoryTabs" role="tablist" aria-label="Tool categories">
+        {groupedTabs.map(([group, tabs]) => {
+          const selected = selectedCategory === group;
+          return (
+            <button key={group} className={selected ? 'categoryTab active' : 'categoryTab'} onClick={() => selectCategory(group)} role="tab" aria-selected={selected} type="button">
+              <span>{group}</span>
+              <small>{tabs.length} {tabs.length === 1 ? 'tool' : 'tools'}</small>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="tabShell categoryShell">
+        <div className="toolCardGrid" role="list" aria-label={`${selectedCategory} tools`}>
+          {categoryTools.map((tab) => {
+            const Icon = toolIcons[tab.id];
+            const selected = selectedToolId === tab.id;
+            return (
+              <button key={tab.id} className={selected ? 'toolChoice active' : 'toolChoice'} onClick={() => setActiveTab(tab.id)} role="listitem" type="button">
+                <span className="toolChoiceIcon"><Icon aria-hidden="true" size={20} /></span>
+                <span className="toolChoiceText">
+                  <strong>{tab.label}</strong>
+                  <small>{tab.description}</small>
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         <div className="tabBody" role="tabpanel">
@@ -192,8 +215,8 @@ export function DashboardActions() {
             </div>
           </div>
 
-          {activeTab === 'status' ? <StatusPanel loading={loading} onHealth={checkHealth} onSampleCheck={runSampleCheck} /> : null}
-          {activeTab !== 'status' ? <ActiveToolForm activeTab={activeTab} error={formErrors[activeTab]} loading={loading} onError={(message) => setFormErrors((current) => ({ ...current, [activeTab]: message }))} onSubmit={(payload) => submitTool(activeTab, payload)} /> : null}
+          {selectedToolId === 'status' ? <StatusPanel loading={loading} onHealth={checkHealth} onSampleCheck={runSampleCheck} /> : null}
+          {selectedToolId !== 'status' ? <ActiveToolForm activeTab={selectedToolId} error={formErrors[selectedToolId]} loading={loading} onError={(message) => setFormErrors((current) => ({ ...current, [selectedToolId]: message }))} onSubmit={(payload) => submitTool(selectedToolId, payload)} /> : null}
         </div>
       </div>
 
