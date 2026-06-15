@@ -284,7 +284,7 @@ export function normalizeApiResult(raw: unknown, fallbackStatus = 200): ApiResul
   const response = record.response;
   const resultUrl = typeof response === 'string'
     ? response
-    : readString(response, 'url') ?? readString(response, 'media_url') ?? readString(response, 'video_url') ?? readString(response, 'thumbnail_url');
+    : readString(response, 'url') ?? readString(response, 'media_url') ?? readString(response, 'video_url') ?? readString(response, 'thumbnail_url') ?? readString(record, 'download_url');
 
   return {
     ok: code >= 200 && code < 300 && message.toLowerCase() !== 'error',

@@ -164,6 +164,21 @@ export function DashboardActions() {
     }
   }
 
+  async function pollClipFactoryJob(initialResult: ApiResult, token: string | null) {
+    const raw = initialResult.raw as { job_id?: string } | null;
+    const jobId = raw?.job_id;
+    if (!jobId) return;
+    setLoading('aiClipDirector');
+    for (let attempt = 0; attempt < 90; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, attempt < 4 ? 2500 : 5000));
+      const status = await readJson(await apiFetch(`/api/ai/clip-plan/status?job_id=${encodeURIComponent(jobId)}`, token, { cache: 'no-store' }));
+      setResults((current) => ({ ...current, aiClipDirector: status }));
+      const statusRaw = status.raw as { status?: string } | null;
+      if (statusRaw?.status === 'done' || statusRaw?.status === 'failed') break;
+    }
+    setLoading(null);
+  }
+
   async function submitTool(tool: ExecutableToolTabId, payload: Record<string, unknown> | Array<Record<string, unknown>>) {
     setLoading(tool);
     setFormErrors((current) => ({ ...current, [tool]: undefined }));
@@ -186,6 +201,7 @@ export function DashboardActions() {
       }
       const result = await postTool(apiPaths[tool], payload, token);
       setResults((current) => ({ ...current, [tool]: result }));
+      if (tool === 'aiClipDirector' && result.ok) pollClipFactoryJob(result, token);
     } finally {
       setLoading(null);
     }
@@ -450,7 +466,7 @@ function ActiveToolForm({ activeTab, ...props }: ToolFormProps & { activeTab: Ex
     case 'jobsStatus':
       return <ToolForm {...props} tool="jobsStatus" submitLabel="Show job history" fields={<p className="muted smallNote">This asks the toolkit for recent job status files. No input is needed.</p>} />;
     case 'aiClipDirector':
-      return <ToolForm {...props} tool="aiClipDirector" submitLabel="Create short videos" fields={<><div className="aiSetupNote fieldWide"><Sparkles aria-hidden="true" size={18} /><div><strong>AI Clip Factory</strong><p className="muted smallNote">Paste a timestamped transcript and the direct source video link. When server-side AI is configured, the app asks AI for clip ranges, cuts the video, captions each short, and returns the finished short-video links. ZIP packaging is the next worker step.</p></div></div><UrlField name="source_url" label="Direct source video link" help="Use the downloadable video link you want cut. For YouTube, first use Save from link, then paste the prepared video output here." /><TextAreaField name="transcript" label="Timestamped transcript" rows={10} required placeholder={'00:00:00 Speaker: Opening thought...\n00:01:12 Speaker: Interesting point...'} help="Use transcript output with timestamps when possible. AI needs timestamps to suggest exact cut ranges." /><TextAreaField name="brand_context" label="Brand instructions" rows={5} placeholder={'Audience: beginner creators\nTone: punchy, helpful, no hype\nIntro: quick logo sting or text hook\nOutro: follow for more automation tips'} help="Tell AI your audience, tone, intro/outro wording, and what kind of moments are valuable." /><UrlField name="intro_url" label="Intro video link" required={false} help="Optional. A short branded intro clip to attach before each short." /><UrlField name="outro_url" label="Outro video link" required={false} help="Optional. A short branded outro clip to attach after each short." /><TextField name="clip_count" label="How many shorts" defaultValue="5" inputMode="numeric" /><TextField name="clip_seconds" label="Target seconds per short" defaultValue="45" inputMode="numeric" /><TextField name="intro_outro_seconds" label="Intro/outro seconds" defaultValue="3" inputMode="numeric" /><SelectField name="style_preset" label="Caption style" defaultValue="bold" options={[["clean", "Clean"], ["bold", "Bold"], ["karaoke", "Karaoke/highlight"]]} /></>} />;
+      return <ToolForm {...props} tool="aiClipDirector" submitLabel="Create short videos" fields={<><div className="aiSetupNote fieldWide"><Sparkles aria-hidden="true" size={18} /><div><strong>AI Clip Factory</strong><p className="muted smallNote">Paste a timestamped transcript and the direct source video link. The Oracle worker uses Codex to choose clip ranges, cuts the video, captions each short, creates a ZIP, and returns one private download link.</p></div></div><UrlField name="source_url" label="Direct source video link" help="Use the downloadable video link you want cut. For YouTube, first use Save from link, then paste the prepared video output here." /><TextAreaField name="transcript" label="Timestamped transcript" rows={10} required placeholder={'00:00:00 Speaker: Opening thought...\n00:01:12 Speaker: Interesting point...'} help="Use transcript output with timestamps when possible. AI needs timestamps to suggest exact cut ranges." /><TextAreaField name="brand_context" label="Brand instructions" rows={5} placeholder={'Audience: beginner creators\nTone: punchy, helpful, no hype\nIntro: quick logo sting or text hook\nOutro: follow for more automation tips'} help="Tell AI your audience, tone, intro/outro wording, and what kind of moments are valuable." /><UrlField name="intro_url" label="Intro video link" required={false} help="Optional. A short branded intro clip to attach before each short." /><UrlField name="outro_url" label="Outro video link" required={false} help="Optional. A short branded outro clip to attach after each short." /><TextField name="clip_count" label="How many shorts" defaultValue="5" inputMode="numeric" /><TextField name="clip_seconds" label="Target seconds per short" defaultValue="45" inputMode="numeric" /><TextField name="intro_outro_seconds" label="Intro/outro seconds" defaultValue="3" inputMode="numeric" /><SelectField name="style_preset" label="Caption style" defaultValue="bold" options={[["clean", "Clean"], ["bold", "Bold"], ["karaoke", "Karaoke/highlight"]]} /></>} />;
   }
 }
 

@@ -1,31 +1,23 @@
-import { requireAdmin } from '../../_auth.js';
+import { requireAdmin } from '../../../_auth.js';
 
-async function readJsonBody(request) {
-  try {
-    const body = await request.json();
-    return body && typeof body === 'object' ? body : {};
-  } catch {
-    return {};
-  }
-}
-
-async function proxyToOracle(context, path, options = {}) {
+async function proxyStatus(context, jobId) {
   const env = context.env || {};
   const baseUrl = env.ORACLE_BACKEND_BASE_URL || 'https://api.codev.id';
   const token = env.ORACLE_BACKEND_PROXY_SECRET || env.CODEV_API_PROXY_TOKEN;
   if (!token) {
     return Response.json({ code: 500, message: 'Backend secret is missing.' }, { status: 200 });
   }
+  if (!jobId || !/^[0-9a-f-]{36}$/i.test(jobId)) {
+    return Response.json({ code: 400, message: 'Missing or invalid job id.' }, { status: 200 });
+  }
 
   try {
-    const upstream = await fetch(`${baseUrl.replace(/\/+$/, '')}${path}`, {
-      method: options.method || 'POST',
+    const upstream = await fetch(`${baseUrl.replace(/\/+$/, '')}/ai/clip-factory/jobs/${jobId}`, {
+      method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: 'application/json',
-        'content-type': 'application/json',
       },
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
     });
     const data = await upstream.json().catch(async () => ({ message: await upstream.text().catch(() => '') }));
     return Response.json(data, { status: upstream.ok ? upstream.status : 200 });
@@ -38,8 +30,9 @@ async function proxyToOracle(context, path, options = {}) {
   }
 }
 
-export const onRequestPost = async (context) => {
+export const onRequestGet = async (context) => {
   const auth = await requireAdmin(context);
   if (auth) return auth;
-  return proxyToOracle(context, '/ai/clip-factory/jobs', { method: 'POST', body: await readJsonBody(context.request) });
+  const url = new URL(context.request.url);
+  return proxyStatus(context, url.searchParams.get('job_id') || '');
 };
