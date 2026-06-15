@@ -49,7 +49,6 @@ export function buildPayload(_tool: ToolTabId, fields: Record<string, FormDataEn
     }
 
     if (typeof value !== 'string') continue;
-
     const trimmed = value.trim();
     if (!trimmed) continue;
 
@@ -79,40 +78,47 @@ function readString(value: unknown, field: string): string | undefined {
   return typeof record?.[field] === 'string' ? record[field] : undefined;
 }
 
-function readNumber(value: unknown, field: string): number | undefined {
-  const record = readRecord(value);
-  return typeof record?.[field] === 'number' ? record[field] : undefined;
-}
-
-export function normalizeApiResult(raw: unknown, fallbackStatus: number): ApiResult {
-  const code = readNumber(raw, 'code') ?? fallbackStatus;
-  const message = readString(raw, 'message') ?? (code >= 200 && code < 300 ? 'success' : 'request failed');
-  const endpoint = readString(raw, 'endpoint');
-  const response = readRecord(raw)?.response;
-  const resultUrl = typeof response === 'string' && response.startsWith('http') ? response : undefined;
+export function normalizeApiResult(raw: unknown, fallbackStatus = 200): ApiResult {
+  const record = readRecord(raw) ?? {};
+  const code = typeof record.code === 'number' ? record.code : fallbackStatus;
+  const message = typeof record.message === 'string' ? record.message : code >= 200 && code < 300 ? 'success' : 'problem';
+  const response = record.response;
+  const resultUrl = typeof response === 'string'
+    ? response
+    : readString(response, 'url') ?? readString(response, 'media_url') ?? readString(response, 'video_url') ?? readString(response, 'thumbnail_url');
 
   return {
-    ok: code >= 200 && code < 300,
-    status: fallbackStatus,
+    ok: code >= 200 && code < 300 && message.toLowerCase() !== 'error',
+    status: code,
     message,
-    endpoint,
+    endpoint: typeof record.endpoint === 'string' ? record.endpoint : undefined,
     resultUrl,
     raw,
   };
 }
 
 export function extractResultLinks(raw: unknown): ResultLink[] {
-  const root = readRecord(raw);
-  const candidates = [root, readRecord(root?.response)].filter(Boolean) as Record<string, unknown>[];
   const links: ResultLink[] = [];
+  const seen = new Set<string>();
 
-  for (const candidate of candidates) {
-    for (const [label, value] of Object.entries(candidate)) {
-      if (typeof value === 'string' && /^https?:\/\//i.test(value)) {
+  function walk(value: unknown, label = 'result') {
+    if (!value) return;
+    if (typeof value === 'string') {
+      if (/^https?:\/\//i.test(value) && !seen.has(value)) {
+        seen.add(value);
         links.push({ label, url: value });
       }
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => walk(item, `${label} ${index + 1}`));
+      return;
+    }
+    if (typeof value === 'object') {
+      for (const [key, nested] of Object.entries(value as Record<string, unknown>)) walk(nested, key);
     }
   }
 
-  return links.filter((link, index, all) => all.findIndex((item) => item.url === link.url) === index);
+  walk(raw);
+  return links;
 }

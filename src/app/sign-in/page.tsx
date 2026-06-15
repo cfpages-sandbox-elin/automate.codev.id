@@ -1,16 +1,26 @@
-import Link from 'next/link';
+'use client';
+
+import { SignIn } from '@clerk/clerk-react';
+import { clerkIsConfigured } from '@/lib/admin-auth';
+
+const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 export default function SignInPage() {
+  if (!clerkIsConfigured(publishableKey)) {
+    return (
+      <main className="authShell">
+        <section className="authCard">
+          <p className="eyebrow">Setup needed</p>
+          <h1>Login is almost ready.</h1>
+          <p className="muted">Add the Clerk keys in Cloudflare Pages, then redeploy.</p>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="authShell">
-      <section className="authCard">
-        <p className="eyebrow">Welcome back</p>
-        <h1>Sign in is not required yet.</h1>
-        <p className="muted">
-          You can use Automate Studio from the home page. Account access will be added later when saved history and private workspaces are ready.
-        </p>
-        <Link className="buttonLike" href="/">Open Automate Studio</Link>
-      </section>
+      <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" fallbackRedirectUrl="/" />
     </main>
   );
 }

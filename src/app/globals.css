@@ -97,6 +97,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 select:focus-visible,
+textarea:focus-visible,
 summary:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
   outline-offset: 3px;
@@ -108,6 +109,11 @@ button.secondary {
   color: var(--text);
 }
 
+button.smallButton {
+  min-height: 40px;
+  padding: 0.62rem 0.78rem;
+}
+
 button:disabled {
   cursor: not-allowed;
   filter: grayscale(0.3);
@@ -116,7 +122,8 @@ button:disabled {
 }
 
 input,
-select {
+select,
+textarea {
   border: 1px solid var(--border);
   border-radius: var(--squircle-sm);
   background: var(--surface-strong);
@@ -129,7 +136,12 @@ select {
   width: 100%;
 }
 
-input::placeholder {
+textarea {
+  resize: vertical;
+}
+
+input::placeholder,
+textarea::placeholder {
   color: var(--faint);
 }
 
@@ -224,6 +236,18 @@ h3 {
   border: 1px solid var(--border);
   color: var(--text);
   white-space: nowrap;
+}
+
+.topActions,
+.authTopper {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.authTopper {
+  justify-content: center;
+  width: 100%;
 }
 
 .featureStrip {
@@ -342,8 +366,22 @@ h3 {
   border: 1px solid var(--border);
   border-radius: var(--squircle-md);
   display: grid;
-  gap: 8px;
+  gap: 12px;
   padding: 8px;
+}
+
+.tabGroup {
+  display: grid;
+  gap: 7px;
+}
+
+.tabGroupTitle {
+  color: var(--faint);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin: 6px 8px 2px;
+  text-transform: uppercase;
 }
 
 .tabButton {
@@ -396,6 +434,10 @@ h3 {
   align-items: center;
   display: inline-flex;
   gap: 6px;
+}
+
+.fieldWide {
+  grid-column: 1 / -1;
 }
 
 .checkGrid {

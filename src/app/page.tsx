@@ -1,10 +1,13 @@
 import { CheckCircle2, Clock3, FileVideo2 } from 'lucide-react';
+import { AccountMenu } from './AccountMenu';
+import { AdminGate } from './AdminGate';
 import { DashboardActions } from './DashboardActions';
 import { ThemeToggle } from './ThemeToggle';
 
 export default function Home() {
   return (
-    <main className="shell">
+    <AdminGate>
+      <main className="shell">
       <header className="topbar">
         <div>
           <p className="eyebrow">Automate Studio</p>
@@ -13,7 +16,10 @@ export default function Home() {
             Paste a video or audio link, choose what you want, and get a ready-to-use result. No technical setup needed.
           </p>
         </div>
-        <ThemeToggle />
+        <div className="topActions">
+          <AccountMenu />
+          <ThemeToggle />
+        </div>
       </header>
 
       <section className="featureStrip" aria-label="What this app can help with">
@@ -41,6 +47,7 @@ export default function Home() {
       </section>
 
       <DashboardActions />
-    </main>
+      </main>
+    </AdminGate>
   );
 }
