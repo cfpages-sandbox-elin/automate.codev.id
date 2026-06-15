@@ -1,3 +1,4 @@
+import { requireAdmin } from '../../../_auth.js';
 async function proxyToOracle(context, options) {
   const env = context.env || {};
   const baseUrl = env.ORACLE_BACKEND_BASE_URL || 'https://api.codev.id';
@@ -46,4 +47,8 @@ async function readJsonBody(request) {
   }
 }
 
-export const onRequestPost = async (context) => proxyToOracle(context, { path: '/nca/media/convert/mp3', method: 'POST', body: await readJsonBody(context.request) });
+export const onRequestPost = async (context) => {
+  const auth = await requireAdmin(context);
+  if (auth) return auth;
+  return proxyToOracle(context, { path: '/nca/media/convert/mp3', method: 'POST', body: await readJsonBody(context.request) });
+};

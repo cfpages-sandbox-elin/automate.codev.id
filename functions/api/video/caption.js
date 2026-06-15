@@ -50,5 +50,5 @@ async function readJsonBody(request) {
 export const onRequestPost = async (context) => {
   const auth = await requireAdmin(context);
   if (auth) return auth;
-  return proxyToOracle(context, { path: '/nca/video/trim', method: 'POST', body: await readJsonBody(context.request) });
+  return proxyToOracle(context, { path: '/nca/video/caption', method: 'POST', body: await readJsonBody(context.request) });
 };

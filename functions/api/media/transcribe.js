@@ -1,3 +1,5 @@
+import { requireAdmin } from '../../_auth.js';
+
 function isYouTubeUrl(value) {
   try {
     const hostname = new URL(value).hostname.toLowerCase().replace(/^www\./, '');
@@ -83,6 +85,9 @@ async function readJsonBody(request) {
 }
 
 export const onRequestPost = async (context) => {
+  const auth = await requireAdmin(context);
+  if (auth) return auth;
+
   const body = await readJsonBody(context.request);
   const mediaUrl = typeof body.media_url === 'string' ? body.media_url : '';
   const transcribeBody = { ...body };
