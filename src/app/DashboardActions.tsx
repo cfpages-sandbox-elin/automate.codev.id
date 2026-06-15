@@ -52,6 +52,15 @@ const toolIcons: Record<ToolTabId, IconComponent> = {
   jobsStatus: History,
 };
 
+const categoryIcons: Record<ToolGroup, IconComponent> = {
+  'Quick tools': Sparkles,
+  'Audio and text': FileAudio2,
+  'Video editing': Film,
+  Captions: FileText,
+  'Images and pages': Image,
+  History,
+};
+
 async function readJson(response: Response): Promise<ApiResult> {
   const text = await response.text();
   let raw: unknown = null;
@@ -177,46 +186,52 @@ export function DashboardActions() {
         </button>
       </div>
 
-      <div className="categoryTabs" role="tablist" aria-label="Tool categories">
-        {groupedTabs.map(([group, tabs]) => {
-          const selected = selectedCategory === group;
-          return (
-            <button key={group} className={selected ? 'categoryTab active' : 'categoryTab'} onClick={() => selectCategory(group)} role="tab" aria-selected={selected} type="button">
-              <span>{group}</span>
-              <small>{tabs.length} {tabs.length === 1 ? 'tool' : 'tools'}</small>
-            </button>
-          );
-        })}
-      </div>
-
       <div className="tabShell categoryShell">
-        <div className="toolCardGrid" role="list" aria-label={`${selectedCategory} tools`}>
-          {categoryTools.map((tab) => {
-            const Icon = toolIcons[tab.id];
-            const selected = selectedToolId === tab.id;
-            return (
-              <button key={tab.id} className={selected ? 'toolChoice active' : 'toolChoice'} onClick={() => setActiveTab(tab.id)} role="listitem" type="button">
-                <span className="toolChoiceIcon"><Icon aria-hidden="true" size={20} /></span>
-                <span className="toolChoiceText">
-                  <strong>{tab.label}</strong>
-                  <small>{tab.description}</small>
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <aside className="categorySideTabs" aria-label="Tool categories">
+          <p className="sideTabsLabel">Categories</p>
+          <div role="tablist" aria-orientation="vertical">
+            {groupedTabs.map(([group, tabs]) => {
+              const selected = selectedCategory === group;
+              const CategoryIcon = categoryIcons[group];
+              return (
+                <button key={group} className={selected ? 'categoryTab active' : 'categoryTab'} onClick={() => selectCategory(group)} role="tab" aria-selected={selected} type="button">
+                  <span className="categoryTabIcon"><CategoryIcon aria-hidden="true" size={18} /></span>
+                  <span className="categoryTabText">
+                    <strong>{group}</strong>
+                    <small>{tabs.length} {tabs.length === 1 ? 'tool' : 'tools'}</small>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </aside>
 
-        <div className="tabBody" role="tabpanel">
-          <div className="toolIntro">
-            <span className="toolIntroIcon"><ActiveIcon aria-hidden="true" size={22} /></span>
-            <div>
-              <h3>{activeMeta.label}</h3>
-              <p>{activeMeta.description}</p>
-            </div>
+        <div className="toolWorkspace">
+          <div className="featureTabs" role="tablist" aria-label={`${selectedCategory} features`}>
+            {categoryTools.map((tab) => {
+              const Icon = toolIcons[tab.id];
+              const selected = selectedToolId === tab.id;
+              return (
+                <button key={tab.id} className={selected ? 'featureTab active' : 'featureTab'} onClick={() => setActiveTab(tab.id)} role="tab" aria-selected={selected} type="button">
+                  <Icon aria-hidden="true" size={17} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
 
-          {selectedToolId === 'status' ? <StatusPanel loading={loading} onHealth={checkHealth} onSampleCheck={runSampleCheck} /> : null}
-          {selectedToolId !== 'status' ? <ActiveToolForm activeTab={selectedToolId} error={formErrors[selectedToolId]} loading={loading} onError={(message) => setFormErrors((current) => ({ ...current, [selectedToolId]: message }))} onSubmit={(payload) => submitTool(selectedToolId, payload)} /> : null}
+          <div className="tabBody" role="tabpanel">
+            <div className="toolIntro">
+              <span className="toolIntroIcon"><ActiveIcon aria-hidden="true" size={22} /></span>
+              <div>
+                <h3>{activeMeta.label}</h3>
+                <p>{activeMeta.description}</p>
+              </div>
+            </div>
+
+            {selectedToolId === 'status' ? <StatusPanel loading={loading} onHealth={checkHealth} onSampleCheck={runSampleCheck} /> : null}
+            {selectedToolId !== 'status' ? <ActiveToolForm activeTab={selectedToolId} error={formErrors[selectedToolId]} loading={loading} onError={(message) => setFormErrors((current) => ({ ...current, [selectedToolId]: message }))} onSubmit={(payload) => submitTool(selectedToolId, payload)} /> : null}
+          </div>
         </div>
       </div>
 
