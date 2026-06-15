@@ -29,7 +29,6 @@ export function ThemeToggle() {
   return (
     <button className="themeToggle" type="button" onClick={toggleTheme} aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}>
       {isDark ? <Sun aria-hidden="true" size={18} /> : <Moon aria-hidden="true" size={18} />}
-      <span>{isDark ? 'Light mode' : 'Dark mode'}</span>
     </button>
   );
 }
