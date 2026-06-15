@@ -639,6 +639,11 @@ h3 {
   font-weight: 750;
 }
 
+.toolForm.bulkMode .primaryUrlField {
+  display: none;
+}
+
+.modeBox,
 .bulkBox,
 .cookieBox {
   background: var(--surface);
@@ -646,8 +651,38 @@ h3 {
   border-radius: var(--squircle-md);
   display: grid;
   gap: 12px;
-  margin-top: 16px;
+  margin-bottom: 16px;
   padding: 14px;
+}
+
+.modeTabs {
+  background: color-mix(in srgb, var(--surface-strong) 70%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--squircle-sm);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 6px;
+}
+
+.modeTab {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: calc(var(--squircle-sm) - 4px);
+  color: var(--muted);
+  justify-content: center;
+  min-height: 42px;
+}
+
+.modeTab.active {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+  color: var(--text);
+}
+
+.bulkBox,
+.cookieBox {
+  margin: 0;
 }
 
 .cookieBox {
@@ -666,6 +701,33 @@ h3 {
   border-radius: var(--squircle-sm);
   color: var(--muted);
   padding: 0.76rem;
+}
+
+.guideDetails {
+  background: color-mix(in srgb, var(--surface-strong) 60%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--squircle-sm);
+  padding: 12px;
+}
+
+.guideDetails summary {
+  color: var(--text);
+}
+
+.guideSteps {
+  color: var(--muted);
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.guideSteps ol {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.guideSteps li {
+  margin: 0.28rem 0;
 }
 
 .formError {

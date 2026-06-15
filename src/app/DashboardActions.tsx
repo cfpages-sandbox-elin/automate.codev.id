@@ -321,11 +321,12 @@ function ActiveToolForm({ activeTab, ...props }: ToolFormProps & { activeTab: Ex
 
 function ToolForm({ loading, tool, fields, submitLabel, error, onError, onSubmit }: ToolFormProps & { tool: Exclude<ToolTabId, 'status'>; fields: ReactNode; submitLabel: string }) {
   const bulkField = urlFieldByTool[tool];
+  const [runMode, setRunMode] = useState<'single' | 'bulk'>('single');
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
-    const bulkEnabled = Boolean(bulkField && (form.elements.namedItem('bulk_mode') as HTMLInputElement | null)?.checked);
+    const bulkEnabled = Boolean(bulkField && runMode === 'bulk');
     const urlInputs = Array.from(form.querySelectorAll('input[type="url"]')) as HTMLInputElement[];
     const invalidUrl = !bulkEnabled ? urlInputs.find((input) => !input.validity.valid) : undefined;
     if (invalidUrl) {
@@ -392,9 +393,9 @@ function ToolForm({ loading, tool, fields, submitLabel, error, onError, onSubmit
   }
 
   return (
-    <form className="toolForm" onSubmit={handleSubmit} noValidate>
+    <form className={runMode === 'bulk' ? 'toolForm bulkMode' : 'toolForm singleMode'} onSubmit={handleSubmit} noValidate>
+      {bulkField ? <BulkModeField mode={runMode} onModeChange={setRunMode} /> : null}
       <div className="formGrid">{fields}</div>
-      {bulkField ? <BulkModeField /> : null}
       {error ? <p className="formError"><CircleAlert aria-hidden="true" size={16} />{error}</p> : null}
       <div className="buttonRow">
         <button disabled={loading !== null} type="submit">
@@ -407,14 +408,23 @@ function ToolForm({ loading, tool, fields, submitLabel, error, onError, onSubmit
   );
 }
 
-function BulkModeField() {
+function BulkModeField({ mode, onModeChange }: { mode: 'single' | 'bulk'; onModeChange: (mode: 'single' | 'bulk') => void }) {
   return (
-    <div className="bulkBox fieldWide">
-      <label className="checkField">
-        <input name="bulk_mode" type="checkbox" />
-        <span>Bulk mode: run many links with the same settings</span>
-      </label>
-      <TextAreaField name="bulk_urls" label="Bulk links" placeholder={'https://youtube.com/watch?v=first\nhttps://youtube.com/watch?v=second'} help="Optional. Turn on bulk mode, then paste one link per line. Empty lines and duplicate links are ignored." />
+    <div className="modeBox fieldWide">
+      <div className="modeTabs" role="tablist" aria-label="Run mode">
+        <button className={mode === 'single' ? 'modeTab active' : 'modeTab'} onClick={() => onModeChange('single')} role="tab" aria-selected={mode === 'single'} type="button">
+          Single link
+        </button>
+        <button className={mode === 'bulk' ? 'modeTab active' : 'modeTab'} onClick={() => onModeChange('bulk')} role="tab" aria-selected={mode === 'bulk'} type="button">
+          Bulk links
+        </button>
+      </div>
+      {mode === 'bulk' ? (
+        <div className="bulkBox">
+          <p className="muted smallNote">Paste one link per line. The same settings above will be used for every link. Empty lines and duplicate links are ignored.</p>
+          <TextAreaField name="bulk_urls" label="Bulk links" placeholder={'https://youtube.com/watch?v=first\nhttps://youtube.com/watch?v=second'} help="Runs up to 25 links per submit, one by one." />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -424,10 +434,32 @@ function YoutubeCookieField() {
     <div className="cookieBox fieldWide">
       <div>
         <strong>YouTube signed-in helper</strong>
-        <p className="muted smallNote">Optional. Export your YouTube/Google cookies as a Netscape cookies.txt file, then choose it here. The file is sent only with this run and is not saved by the browser app.</p>
+        <p className="muted smallNote">Optional. Use this when YouTube blocks a normal public download. Choose an exported Netscape-format cookies.txt file, or paste its content below. The browser app sends it only with this run and does not save it.</p>
       </div>
+      <details className="guideDetails">
+        <summary><ChevronDown aria-hidden="true" size={16} /> How to make a cookies.txt file</summary>
+        <div className="guideSteps">
+          <p><strong>Chrome or Edge</strong></p>
+          <ol>
+            <li>Open the Chrome Web Store or Microsoft Edge Add-ons.</li>
+            <li>Search for a cookies.txt exporter extension that says it exports in Netscape format.</li>
+            <li>Install it, then open youtube.com and make sure you are signed in.</li>
+            <li>Click the extension and export cookies for the current site, or for YouTube/Google if it offers that choice.</li>
+            <li>Save the file as cookies.txt, then choose it here.</li>
+          </ol>
+          <p><strong>Firefox</strong></p>
+          <ol>
+            <li>Open Firefox Add-ons.</li>
+            <li>Search for a cookies.txt exporter extension that supports Netscape format.</li>
+            <li>Open youtube.com and make sure you are signed in.</li>
+            <li>Click the extension and export cookies for YouTube/Google.</li>
+            <li>Save the file as cookies.txt, then choose it here.</li>
+          </ol>
+          <p className="muted smallNote">Safety: keep this file private. It can act like a temporary signed-in session. Delete it after use if you do not need it again.</p>
+        </div>
+      </details>
       <label className="fieldLabel">
-        <span>Cookie file <HelpTip text="Use a browser extension that exports cookies in Netscape cookies.txt format. YouTube cannot be opened in an iframe here and this site cannot read youtube.com cookies directly." /></span>
+        <span>Cookie file <HelpTip text="This must be Netscape cookies.txt format. The app cannot read YouTube cookies automatically from your browser." /></span>
         <input name="youtube_cookie_file" type="file" accept=".txt,text/plain" />
       </label>
       <TextAreaField name="youtube_cookies" label="Or paste cookies.txt content" placeholder={'# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tTRUE\t...'} help="Use this only if choosing a file is not convenient. Do not paste random browser cookie text; it must be Netscape cookies.txt format." />
@@ -436,7 +468,12 @@ function YoutubeCookieField() {
 }
 
 function UrlField({ name, label, help = 'Use a direct link that can be opened without signing in.' }: { name: string; label: string; help?: string }) {
-  return <TextField name={name} label={label} type="url" placeholder="https://example.com/media.mp4" required help={help} />;
+  return (
+    <label className="fieldLabel primaryUrlField">
+      <span>{label}{help ? <HelpTip text={help} /> : null}</span>
+      <input name={name} type="url" placeholder="https://example.com/media.mp4" required />
+    </label>
+  );
 }
 
 function MultiUrlField({ name, label, help }: { name: string; label: string; help: string }) {
