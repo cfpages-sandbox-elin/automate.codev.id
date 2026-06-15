@@ -50,6 +50,7 @@ const toolIcons: Record<ToolTabId, IconComponent> = {
   screenshot: Image,
   jobStatus: History,
   jobsStatus: History,
+  aiClipDirector: Sparkles,
   recipeShort: Sparkles,
   recipeTranscriptPack: FileText,
   recipePodcast: FileAudio2,
@@ -111,6 +112,7 @@ const apiPaths: Record<ExecutableToolTabId, string> = {
   screenshot: '/api/image/screenshot/webpage',
   jobStatus: '/api/toolkit/job/status',
   jobsStatus: '/api/toolkit/jobs/status',
+  aiClipDirector: '/api/ai/clip-plan',
 };
 
 const recipeIds = new Set<ToolTabId>([
@@ -447,6 +449,8 @@ function ActiveToolForm({ activeTab, ...props }: ToolFormProps & { activeTab: Ex
       return <ToolForm {...props} tool="jobStatus" submitLabel="Check job" fields={<TextField name="job_id" label="Job ID" required help="Paste the job_id shown in an earlier long-running result." />} />;
     case 'jobsStatus':
       return <ToolForm {...props} tool="jobsStatus" submitLabel="Show job history" fields={<p className="muted smallNote">This asks the toolkit for recent job status files. No input is needed.</p>} />;
+    case 'aiClipDirector':
+      return <ToolForm {...props} tool="aiClipDirector" submitLabel="Create short videos" fields={<><div className="aiSetupNote fieldWide"><Sparkles aria-hidden="true" size={18} /><div><strong>AI Clip Factory</strong><p className="muted smallNote">Paste a timestamped transcript and the direct source video link. When server-side AI is configured, the app asks AI for clip ranges, cuts the video, captions each short, and returns the finished short-video links. ZIP packaging is the next worker step.</p></div></div><UrlField name="source_url" label="Direct source video link" help="Use the downloadable video link you want cut. For YouTube, first use Save from link, then paste the prepared video output here." /><TextAreaField name="transcript" label="Timestamped transcript" rows={10} required placeholder={'00:00:00 Speaker: Opening thought...\n00:01:12 Speaker: Interesting point...'} help="Use transcript output with timestamps when possible. AI needs timestamps to suggest exact cut ranges." /><TextAreaField name="brand_context" label="Brand instructions" rows={5} placeholder={'Audience: beginner creators\nTone: punchy, helpful, no hype\nIntro: quick logo sting or text hook\nOutro: follow for more automation tips'} help="Tell AI your audience, tone, intro/outro wording, and what kind of moments are valuable." /><UrlField name="intro_url" label="Intro video link" required={false} help="Optional. A short branded intro clip to attach before each short." /><UrlField name="outro_url" label="Outro video link" required={false} help="Optional. A short branded outro clip to attach after each short." /><TextField name="clip_count" label="How many shorts" defaultValue="5" inputMode="numeric" /><TextField name="clip_seconds" label="Target seconds per short" defaultValue="45" inputMode="numeric" /><TextField name="intro_outro_seconds" label="Intro/outro seconds" defaultValue="3" inputMode="numeric" /><SelectField name="style_preset" label="Caption style" defaultValue="bold" options={[["clean", "Clean"], ["bold", "Bold"], ["karaoke", "Karaoke/highlight"]]} /></>} />;
   }
 }
 
@@ -598,11 +602,11 @@ function YoutubeCookieField() {
   );
 }
 
-function UrlField({ name, label, help = 'Use a direct link that can be opened without signing in.' }: { name: string; label: string; help?: string }) {
+function UrlField({ name, label, help = 'Use a direct link that can be opened without signing in.', required = true }: { name: string; label: string; help?: string; required?: boolean }) {
   return (
     <label className="fieldLabel primaryUrlField">
       <span>{label}{help ? <HelpTip text={help} /> : null}</span>
-      <input name={name} type="url" placeholder="https://example.com/media.mp4" required />
+      <input name={name} type="url" placeholder="https://example.com/media.mp4" required={required} />
     </label>
   );
 }

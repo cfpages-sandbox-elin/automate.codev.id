@@ -16,6 +16,7 @@ describe('tool API helpers', () => {
     expect(ids).toContain('silence');
     expect(ids).toContain('jobStatus');
     expect(ids).toContain('recipeShort');
+    expect(ids).toContain('aiClipDirector');
     expect(ids).toContain('recipeTranscriptPack');
     expect(ids).toContain('recipePodcast');
     expect(ids).not.toContain('python');

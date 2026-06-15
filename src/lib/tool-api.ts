@@ -18,6 +18,7 @@ export type ToolTabId =
   | 'assStyle'
   | 'jobStatus'
   | 'jobsStatus'
+  | 'aiClipDirector'
   | 'recipeShort'
   | 'recipeTranscriptPack'
   | 'recipePodcast'
@@ -93,6 +94,7 @@ export const toolTabs: ToolTab[] = [
   { id: 'assStyle', label: 'Subtitle style file', description: 'Create a subtitle style file for caption workflows.', group: 'Captions' },
   { id: 'imageVideo', label: 'Image to video', description: 'Turn an image link into a short zooming social clip.', group: 'Images and pages' },
   { id: 'screenshot', label: 'Screenshot webpage', description: 'Capture a webpage you own or have permission to capture.', group: 'Images and pages' },
+  { id: 'aiClipDirector', label: 'AI clip factory', description: 'Use AI to find moments, cut them, brand them, and caption short videos.', group: 'Creative recipes' },
   { id: 'recipeShort', label: 'Captioned short', description: 'Turn a long video into a short clip with captions and a thumbnail.', group: 'Creative recipes' },
   { id: 'recipeTranscriptPack', label: 'Transcript pack', description: 'Create text, subtitles, and audio from a video or podcast.', group: 'Creative recipes' },
   { id: 'recipePodcast', label: 'Podcast assembly', description: 'Clean up audio, add pauses, and join intro/body/outro.', group: 'Creative recipes' },
@@ -106,13 +108,14 @@ export const toolTabs: ToolTab[] = [
 const numericFields = new Set([
   'sample_rate', 'second', 'video_crf', 'words_per_line', 'length', 'frame_rate', 'zoom_speed', 'duration',
   'viewport_width', 'viewport_height', 'delay', 'device_scale_factor', 'quality', 'timeout', 'canvas_width',
-  'canvas_height', 'font_size', 'max_words_per_line', 'outline_width', 'shadow_offset',
+  'canvas_height', 'font_size', 'max_words_per_line', 'outline_width', 'shadow_offset', 'clip_count',
+  'clip_seconds', 'intro_outro_seconds',
 ]);
 const booleanFields = new Set([
   'include_text', 'include_srt', 'include_segments', 'word_timestamps', 'cloud_upload', 'download_audio',
   'full_page', 'omit_background', 'mono', 'all_caps', 'bold', 'public',
 ]);
-const urlFields = new Set(['media_url', 'file_url', 'video_url', 'image_url', 'url']);
+const urlFields = new Set(['media_url', 'file_url', 'video_url', 'image_url', 'url', 'source_url', 'intro_url', 'outro_url']);
 const textLimitByField: Record<string, number> = {
   youtube_cookies: 180_000,
   captions: 60_000,
@@ -120,6 +123,8 @@ const textLimitByField: Record<string, number> = {
   video_urls: 20_000,
   audio_urls: 20_000,
   bulk_urls: 20_000,
+  transcript: 120_000,
+  brand_context: 4_000,
 };
 
 export function sanitizeText(value: string, maxLength = 2_000): string {

@@ -615,6 +615,25 @@ h3 {
   gap: 16px;
 }
 
+.aiSetupNote {
+  align-items: flex-start;
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  border-radius: var(--squircle-md);
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+}
+
+.aiSetupNote > svg {
+  color: var(--accent);
+  flex: 0 0 auto;
+}
+
+.aiSetupNote p {
+  margin: 4px 0 0;
+}
+
 .recipeHero {
   align-items: flex-start;
   background: var(--accent-soft);
