@@ -639,6 +639,35 @@ h3 {
   font-weight: 750;
 }
 
+.bulkBox,
+.cookieBox {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--squircle-md);
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px;
+}
+
+.cookieBox {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+}
+
+.cookieBox .fieldLabel,
+.bulkBox .fieldLabel {
+  display: grid;
+  gap: 8px;
+}
+
+.cookieBox input[type='file'] {
+  background: color-mix(in srgb, var(--surface-strong) 75%, transparent);
+  border: 1px dashed var(--border);
+  border-radius: var(--squircle-sm);
+  color: var(--muted);
+  padding: 0.76rem;
+}
+
 .formError {
   align-items: center;
   background: var(--danger-soft);

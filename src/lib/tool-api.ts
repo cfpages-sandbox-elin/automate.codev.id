@@ -43,6 +43,23 @@ export type ApiResult = {
   raw?: unknown;
 };
 
+export const urlFieldByTool: Partial<Record<ToolTabId, string>> = {
+  metadata: 'media_url',
+  download: 'media_url',
+  upload: 'file_url',
+  mp3: 'media_url',
+  convert: 'media_url',
+  transcribe: 'media_url',
+  silence: 'media_url',
+  thumbnail: 'video_url',
+  trim: 'video_url',
+  cut: 'video_url',
+  caption: 'video_url',
+  assStyle: 'media_url',
+  imageVideo: 'image_url',
+  screenshot: 'url',
+};
+
 export const toolTabs: ToolTab[] = [
   { id: 'status', label: 'Check link', description: 'Make sure the app is ready before you start.', group: 'Quick tools' },
   { id: 'metadata', label: 'File details', description: 'See length, size, and basic media info.', group: 'Quick tools' },
@@ -74,15 +91,73 @@ const booleanFields = new Set([
   'include_text', 'include_srt', 'include_segments', 'word_timestamps', 'cloud_upload', 'download_audio',
   'full_page', 'omit_background', 'mono', 'all_caps', 'bold', 'public',
 ]);
+const urlFields = new Set(['media_url', 'file_url', 'video_url', 'image_url', 'url']);
+const textLimitByField: Record<string, number> = {
+  youtube_cookies: 180_000,
+  captions: 60_000,
+  ranges: 12_000,
+  video_urls: 20_000,
+  audio_urls: 20_000,
+  bulk_urls: 20_000,
+};
+
+export function sanitizeText(value: string, maxLength = 2_000): string {
+  return value
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '')
+    .replace(/\r\n?/g, '\n')
+    .trim()
+    .slice(0, maxLength);
+}
+
+export function sanitizeUrl(value: string): string | undefined {
+  const cleaned = sanitizeText(value, 2_048);
+  if (!cleaned) return undefined;
+  try {
+    const url = new URL(cleaned);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return undefined;
+    url.hash = '';
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+}
+
+export function splitUrlLines(value: unknown, maxItems = 25): string[] {
+  if (typeof value !== 'string') return [];
+  const seen = new Set<string>();
+  const urls: string[] = [];
+  for (const part of value.split(/[\n,]+/)) {
+    const url = sanitizeUrl(part);
+    if (url && !seen.has(url)) {
+      seen.add(url);
+      urls.push(url);
+    }
+    if (urls.length >= maxItems) break;
+  }
+  return urls;
+}
+
+export function sanitizeYoutubeCookies(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const cleaned = sanitizeText(value, textLimitByField.youtube_cookies);
+  if (!cleaned) return undefined;
+  const lines = cleaned.split('\n').filter((line) => line.trim() && !line.trim().startsWith('#'));
+  const looksLikeNetscape = lines.some((line) => line.split('\t').length >= 7 && /(^|\.)youtube\.com$|(^|\.)google\.com$|(^|\.)googlevideo\.com$/i.test(line.split('\t')[0] ?? ''));
+  return looksLikeNetscape ? cleaned : undefined;
+}
 
 function readLines(value: unknown): string[] {
-  return typeof value === 'string' ? value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean) : [];
+  return typeof value === 'string' ? value.split(/\r?\n/).map((line) => sanitizeText(line, 2_048)).filter(Boolean) : [];
 }
 
 function readStringField(fields: Record<string, unknown>, key: string): string | undefined {
   const value = fields[key];
   if (typeof value !== 'string') return undefined;
-  const trimmed = value.trim();
+  const trimmed = key === 'youtube_cookies'
+    ? sanitizeYoutubeCookies(value)
+    : urlFields.has(key)
+      ? sanitizeUrl(value)
+      : sanitizeText(value, textLimitByField[key] ?? 2_000);
   return trimmed || undefined;
 }
 
@@ -120,7 +195,10 @@ function buildScalarField(key: string, value: unknown): unknown | undefined {
   if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
   if (typeof value !== 'string') return undefined;
 
-  const trimmed = value.trim();
+  if (key === 'youtube_cookies') return sanitizeYoutubeCookies(value);
+  if (urlFields.has(key)) return sanitizeUrl(value);
+
+  const trimmed = sanitizeText(value, textLimitByField[key] ?? 2_000);
   if (!trimmed) return undefined;
   if (numericFields.has(key)) {
     const numberValue = Number(trimmed);
@@ -150,6 +228,8 @@ export function buildPayload(tool: ToolTabId, fields: Record<string, FormDataEnt
   }
   if (tool === 'download') {
     const payload: Record<string, unknown> = { media_url: readStringField(rawFields, 'media_url'), cloud_upload: true };
+    const youtubeCookies = sanitizeYoutubeCookies(rawFields.youtube_cookies);
+    if (youtubeCookies) payload.youtube_cookies = youtubeCookies;
     if (rawFields.download_audio === true) payload.audio = { extract: true, format: readStringField(rawFields, 'audio_format') ?? 'mp3', quality: readStringField(rawFields, 'audio_quality') ?? '192K' };
     return Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined));
   }

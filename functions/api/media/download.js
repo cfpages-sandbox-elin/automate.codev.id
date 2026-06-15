@@ -47,8 +47,33 @@ async function readJsonBody(request) {
   }
 }
 
+function sanitizeYoutubeCookies(value) {
+  if (typeof value !== 'string') return undefined;
+  const cleaned = value
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '')
+    .replace(/\r\n?/g, '\n')
+    .trim()
+    .slice(0, 180000);
+  if (!cleaned) return undefined;
+  const lines = cleaned.split('\n').filter((line) => line.trim() && !line.trim().startsWith('#'));
+  const valid = lines.some((line) => {
+    const domain = line.split('\t')[0] || '';
+    return line.split('\t').length >= 7 && /(^|\.)youtube\.com$|(^|\.)google\.com$|(^|\.)googlevideo\.com$/i.test(domain);
+  });
+  return valid ? cleaned : undefined;
+}
+
+function prepareDownloadBody(body) {
+  const prepared = { ...body };
+  const cookies = sanitizeYoutubeCookies(prepared.youtube_cookies) || sanitizeYoutubeCookies(prepared.cookie);
+  delete prepared.youtube_cookies;
+  if (cookies) prepared.cookie = cookies;
+  else delete prepared.cookie;
+  return prepared;
+}
+
 export const onRequestPost = async (context) => {
   const auth = await requireAdmin(context);
   if (auth) return auth;
-  return proxyToOracle(context, { path: '/nca/media/download', method: 'POST', body: await readJsonBody(context.request) });
+  return proxyToOracle(context, { path: '/nca/media/download', method: 'POST', body: prepareDownloadBody(await readJsonBody(context.request)) });
 };

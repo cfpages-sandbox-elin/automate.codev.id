@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPayload, extractResultLinks, normalizeApiResult, toolTabs } from './tool-api';
+import { buildPayload, extractResultLinks, normalizeApiResult, sanitizeYoutubeCookies, splitUrlLines, toolTabs } from './tool-api';
 
 describe('tool API helpers', () => {
   it('defines grouped tabs for the guided toolkit workflows without exposing dangerous Python execution', () => {
@@ -64,9 +64,24 @@ describe('tool API helpers', () => {
       audio: { extract: true, format: 'mp3', quality: '192K' },
     });
     expect(buildPayload('screenshot', { url: 'https://example.com', viewport_width: '1280', full_page: true })).toEqual({
-      url: 'https://example.com',
+      url: 'https://example.com/',
       viewport_width: 1280,
       full_page: true,
+    });
+  });
+
+  it('sanitizes bulk links and accepts Netscape YouTube cookie exports only', () => {
+    expect(splitUrlLines(' https://example.com/a.mp4#frag\nnot a url\nhttps://example.com/a.mp4\nhttp://example.com/b.mp4 ')).toEqual([
+      'https://example.com/a.mp4',
+      'http://example.com/b.mp4',
+    ]);
+    const cookie = '# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tTRUE\t1893456000\tSID\tsecret';
+    expect(sanitizeYoutubeCookies(cookie)).toContain('.youtube.com');
+    expect(sanitizeYoutubeCookies('SID=secret; path=/')).toBeUndefined();
+    expect(buildPayload('download', { media_url: ' https://youtube.com/watch?v=abc#t=10 ', youtube_cookies: cookie })).toEqual({
+      media_url: 'https://youtube.com/watch?v=abc',
+      cloud_upload: true,
+      youtube_cookies: cookie,
     });
   });
 

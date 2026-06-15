@@ -27,6 +27,22 @@ function buildYoutubeDownloadPayload(mediaUrl, cookie) {
   return payload;
 }
 
+function sanitizeYoutubeCookies(value) {
+  if (typeof value !== 'string') return undefined;
+  const cleaned = value
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '')
+    .replace(/\r\n?/g, '\n')
+    .trim()
+    .slice(0, 180000);
+  if (!cleaned) return undefined;
+  const lines = cleaned.split('\n').filter((line) => line.trim() && !line.trim().startsWith('#'));
+  const valid = lines.some((line) => {
+    const domain = line.split('\t')[0] || '';
+    return line.split('\t').length >= 7 && /(^|\.)youtube\.com$|(^|\.)google\.com$|(^|\.)googlevideo\.com$/i.test(domain);
+  });
+  return valid ? cleaned : undefined;
+}
+
 function readDownloadedMediaUrl(raw) {
   const mediaUrl = raw?.response?.media?.media_url;
   return typeof mediaUrl === 'string' && mediaUrl.startsWith('http') ? mediaUrl : undefined;
@@ -90,14 +106,17 @@ export const onRequestPost = async (context) => {
 
   const body = await readJsonBody(context.request);
   const mediaUrl = typeof body.media_url === 'string' ? body.media_url : '';
+  const requestCookies = sanitizeYoutubeCookies(body.youtube_cookies) || sanitizeYoutubeCookies(body.cookie);
   const transcribeBody = { ...body };
+  delete transcribeBody.youtube_cookies;
+  delete transcribeBody.cookie;
   let youtubeDownload;
 
   if (isYouTubeUrl(mediaUrl)) {
     youtubeDownload = await callOracle(context, {
       path: '/nca/media/download',
       method: 'POST',
-      body: buildYoutubeDownloadPayload(mediaUrl, context.env?.YOUTUBE_COOKIES),
+      body: buildYoutubeDownloadPayload(mediaUrl, requestCookies || context.env?.YOUTUBE_COOKIES),
     });
 
     const downloadedUrl = readDownloadedMediaUrl(youtubeDownload.data);

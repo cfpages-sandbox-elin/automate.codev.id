@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { FormEvent, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react';
-import { buildPayload, extractResultLinks, normalizeApiResult, toolTabs } from '@/lib/tool-api';
+import { buildPayload, extractResultLinks, normalizeApiResult, splitUrlLines, toolTabs, urlFieldByTool } from '@/lib/tool-api';
 import type { ApiResult, ToolGroup, ToolTabId } from '@/lib/tool-api';
 
 type LoadingKey = ToolTabId | null;
@@ -139,11 +139,26 @@ export function DashboardActions() {
     }
   }
 
-  async function submitTool(tool: Exclude<ToolTabId, 'status'>, payload: Record<string, unknown>) {
+  async function submitTool(tool: Exclude<ToolTabId, 'status'>, payload: Record<string, unknown> | Array<Record<string, unknown>>) {
     setLoading(tool);
     setFormErrors((current) => ({ ...current, [tool]: undefined }));
     try {
       const token = await getToken();
+      if (Array.isArray(payload)) {
+        const responses: ApiResult[] = [];
+        for (const item of payload) responses.push(await postTool(apiPaths[tool], item, token));
+        const failures = responses.filter((item) => !item.ok).length;
+        setResults((current) => ({
+          ...current,
+          [tool]: {
+            ok: failures === 0,
+            status: failures === 0 ? 200 : 207,
+            message: failures === 0 ? `Finished ${responses.length} items.` : `Finished ${responses.length - failures} of ${responses.length} items.`,
+            raw: { bulk: true, total: responses.length, failures, results: responses.map((item) => item.raw) },
+          },
+        }));
+        return;
+      }
       const result = await postTool(apiPaths[tool], payload, token);
       setResults((current) => ({ ...current, [tool]: result }));
     } finally {
@@ -260,7 +275,7 @@ type ToolFormProps = {
   loading: LoadingKey;
   error?: string;
   onError: (message?: string) => void;
-  onSubmit: (payload: Record<string, unknown>) => void;
+  onSubmit: (payload: Record<string, unknown> | Array<Record<string, unknown>>) => void;
 };
 
 function ActiveToolForm({ activeTab, ...props }: ToolFormProps & { activeTab: Exclude<ToolTabId, 'status'> }) {
@@ -268,7 +283,7 @@ function ActiveToolForm({ activeTab, ...props }: ToolFormProps & { activeTab: Ex
     case 'metadata':
       return <ToolForm {...props} tool="metadata" submitLabel="Get file details" fields={<UrlField name="media_url" label="Media link" />} />;
     case 'download':
-      return <ToolForm {...props} tool="download" submitLabel="Save from link" fields={<><UrlField name="media_url" label="Media or page link" help="Public links work best. Some video websites may require sign-in cookies on the server." /><CheckboxField name="download_audio" label="Save audio only" /><TextField name="audio_format" label="Audio format" defaultValue="mp3" help="Used only when saving audio only." /></>} />;
+      return <ToolForm {...props} tool="download" submitLabel="Save from link" fields={<><UrlField name="media_url" label="Media or page link" help="Public links work best. For YouTube, add an exported cookie file below when normal download is blocked." /><CheckboxField name="download_audio" label="Save audio only" /><TextField name="audio_format" label="Audio format" defaultValue="mp3" help="Used only when saving audio only." /><YoutubeCookieField /></>} />;
     case 'upload':
       return <ToolForm {...props} tool="upload" submitLabel="Upload from link" fields={<><UrlField name="file_url" label="File link" /><TextField name="filename" label="New file name" placeholder="optional: clip.mp4" help="Optional. Leave blank to keep the original name when possible." /><CheckboxField name="public" label="Make the result link public" defaultChecked /></>} />;
     case 'mp3':
@@ -276,7 +291,7 @@ function ActiveToolForm({ activeTab, ...props }: ToolFormProps & { activeTab: Ex
     case 'convert':
       return <ToolForm {...props} tool="convert" submitLabel="Convert file" fields={<><UrlField name="media_url" label="Media link" /><SelectField label="New format" name="format" defaultValue="mp4" options={[['mp4', 'MP4 video'], ['mov', 'MOV video'], ['webm', 'WEBM video'], ['mp3', 'MP3 audio'], ['wav', 'WAV audio'], ['m4a', 'M4A audio'], ['gif', 'GIF animation']]} /><TextField name="video_crf" label="Video quality number" placeholder="23" help="Optional. Lower usually means higher quality and larger files." inputMode="numeric" /><TextField name="audio_bitrate" label="Sound quality" placeholder="128k" help="Optional. The default works for most files." /></>} />;
     case 'transcribe':
-      return <ToolForm {...props} tool="transcribe" submitLabel="Create transcript" fields={<><UrlField name="media_url" label="Media or YouTube link" help="Paste a direct media link or a YouTube link that can be viewed normally." /><SelectField label="What to do" name="task" defaultValue="transcribe" options={[['transcribe', 'Write what is said'], ['translate', 'Translate to English']]} /><SelectField label="Result format" name="response_type" defaultValue="cloud" options={[['cloud', 'Downloadable files'], ['direct', 'Show text here']]} /><TextField name="language" label="Language hint" placeholder="optional: en, id, zh" help="Optional. Add this when you know the spoken language." /><TextField name="words_per_line" label="Subtitle line length" placeholder="optional" help="Optional. Controls how many words appear per subtitle line." inputMode="numeric" /><div className="checkGrid" aria-label="Transcript options"><CheckboxField name="include_text" label="Text file" defaultChecked /><CheckboxField name="include_srt" label="Subtitle file" defaultChecked /><CheckboxField name="include_segments" label="Detailed timing file" /><CheckboxField name="word_timestamps" label="Word timing" /></div></>} />;
+      return <ToolForm {...props} tool="transcribe" submitLabel="Create transcript" fields={<><UrlField name="media_url" label="Media or YouTube link" help="Paste a direct media link or a YouTube link. For YouTube videos that need your browser session, add an exported cookie file below." /><SelectField label="What to do" name="task" defaultValue="transcribe" options={[['transcribe', 'Write what is said'], ['translate', 'Translate to English']]} /><SelectField label="Result format" name="response_type" defaultValue="cloud" options={[['cloud', 'Downloadable files'], ['direct', 'Show text here']]} /><TextField name="language" label="Language hint" placeholder="optional: en, id, zh" help="Optional. Add this when you know the spoken language." /><TextField name="words_per_line" label="Subtitle line length" placeholder="optional" help="Optional. Controls how many words appear per subtitle line." inputMode="numeric" /><div className="checkGrid" aria-label="Transcript options"><CheckboxField name="include_text" label="Text file" defaultChecked /><CheckboxField name="include_srt" label="Subtitle file" defaultChecked /><CheckboxField name="include_segments" label="Detailed timing file" /><CheckboxField name="word_timestamps" label="Word timing" /></div><YoutubeCookieField /></>} />;
     case 'audioJoin':
       return <ToolForm {...props} tool="audioJoin" submitLabel="Join audio" fields={<MultiUrlField name="audio_urls" label="Audio links" help="Paste one audio link per line. They will be combined in this order." />} />;
     case 'silence':
@@ -305,38 +320,118 @@ function ActiveToolForm({ activeTab, ...props }: ToolFormProps & { activeTab: Ex
 }
 
 function ToolForm({ loading, tool, fields, submitLabel, error, onError, onSubmit }: ToolFormProps & { tool: Exclude<ToolTabId, 'status'>; fields: ReactNode; submitLabel: string }) {
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const bulkField = urlFieldByTool[tool];
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
+    const bulkEnabled = Boolean(bulkField && (form.elements.namedItem('bulk_mode') as HTMLInputElement | null)?.checked);
     const urlInputs = Array.from(form.querySelectorAll('input[type="url"]')) as HTMLInputElement[];
-    const invalidUrl = urlInputs.find((input) => !input.validity.valid);
+    const invalidUrl = !bulkEnabled ? urlInputs.find((input) => !input.validity.valid) : undefined;
     if (invalidUrl) {
       onError('Paste a valid public link first.');
       invalidUrl.focus();
       return;
     }
 
+    const numericInput = Array.from(form.querySelectorAll('input[inputmode="numeric"], input[inputmode="decimal"]'))
+      .find((input) => {
+        const value = (input as HTMLInputElement).value.trim();
+        return value.length > 0 && !Number.isFinite(Number(value));
+      }) as HTMLInputElement | undefined;
+    if (numericInput) {
+      onError('Check the number fields. Use digits only, like 12 or 12.5.');
+      numericInput.focus();
+      return;
+    }
+
     const data = new FormData(form);
+    const cookieFile = data.get('youtube_cookie_file');
+    if (cookieFile instanceof File && cookieFile.size > 0) {
+      if (cookieFile.size > 180_000) {
+        onError('The cookie file is too large. Export only YouTube/Google cookies if possible.');
+        return;
+      }
+      data.set('youtube_cookies', await cookieFile.text());
+    }
+    data.delete('youtube_cookie_file');
+    data.delete('bulk_mode');
+    const bulkUrlsRaw = data.get('bulk_urls');
+    data.delete('bulk_urls');
+
+    const cookieValue = data.get('youtube_cookies');
+    if (typeof cookieValue === 'string' && cookieValue.trim()) {
+      const lines = cookieValue.split(/\r?\n/).filter((line) => line.trim() && !line.trim().startsWith('#'));
+      const validCookie = lines.some((line) => line.split('\t').length >= 7 && /(^|\.)youtube\.com$|(^|\.)google\.com$|(^|\.)googlevideo\.com$/i.test(line.split('\t')[0] ?? ''));
+      if (!validCookie) {
+        onError('That does not look like a Netscape-format YouTube cookie export. Use an exported cookies.txt file.');
+        return;
+      }
+    }
+
     const checkboxValues = Object.fromEntries(Array.from(form.querySelectorAll('input[type="checkbox"]')).map((input) => {
       const checkbox = input as HTMLInputElement;
       return [checkbox.name, checkbox.checked];
     }));
+    delete checkboxValues.bulk_mode;
+    const baseFields = { ...Object.fromEntries(data.entries()), ...checkboxValues };
+
+    if (bulkEnabled && bulkField) {
+      const urls = splitUrlLines(bulkUrlsRaw, 25);
+      if (urls.length === 0) {
+        onError('Bulk mode needs at least one valid http or https link.');
+        return;
+      }
+      onError(undefined);
+      onSubmit(urls.map((url) => buildPayload(tool, { ...baseFields, [bulkField]: url })));
+      return;
+    }
+
     onError(undefined);
-    onSubmit(buildPayload(tool, { ...Object.fromEntries(data.entries()), ...checkboxValues }));
+    onSubmit(buildPayload(tool, baseFields));
   }
 
   return (
     <form className="toolForm" onSubmit={handleSubmit} noValidate>
       <div className="formGrid">{fields}</div>
+      {bulkField ? <BulkModeField /> : null}
       {error ? <p className="formError"><CircleAlert aria-hidden="true" size={16} />{error}</p> : null}
       <div className="buttonRow">
         <button disabled={loading !== null} type="submit">
           {loading === tool ? <Loader2 className="spin" aria-hidden="true" size={18} /> : <Sparkles aria-hidden="true" size={18} />}
           {loading === tool ? 'Working…' : submitLabel}
         </button>
-        <p className="muted smallNote"><Clock3 aria-hidden="true" size={16} /> Bigger files can take a little longer.</p>
+        <p className="muted smallNote"><Clock3 aria-hidden="true" size={16} /> Bigger files can take a little longer. Bulk mode runs links one by one.</p>
       </div>
     </form>
+  );
+}
+
+function BulkModeField() {
+  return (
+    <div className="bulkBox fieldWide">
+      <label className="checkField">
+        <input name="bulk_mode" type="checkbox" />
+        <span>Bulk mode: run many links with the same settings</span>
+      </label>
+      <TextAreaField name="bulk_urls" label="Bulk links" placeholder={'https://youtube.com/watch?v=first\nhttps://youtube.com/watch?v=second'} help="Optional. Turn on bulk mode, then paste one link per line. Empty lines and duplicate links are ignored." />
+    </div>
+  );
+}
+
+function YoutubeCookieField() {
+  return (
+    <div className="cookieBox fieldWide">
+      <div>
+        <strong>YouTube signed-in helper</strong>
+        <p className="muted smallNote">Optional. Export your YouTube/Google cookies as a Netscape cookies.txt file, then choose it here. The file is sent only with this run and is not saved by the browser app.</p>
+      </div>
+      <label className="fieldLabel">
+        <span>Cookie file <HelpTip text="Use a browser extension that exports cookies in Netscape cookies.txt format. YouTube cannot be opened in an iframe here and this site cannot read youtube.com cookies directly." /></span>
+        <input name="youtube_cookie_file" type="file" accept=".txt,text/plain" />
+      </label>
+      <TextAreaField name="youtube_cookies" label="Or paste cookies.txt content" placeholder={'# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tTRUE\t...'} help="Use this only if choosing a file is not convenient. Do not paste random browser cookie text; it must be Netscape cookies.txt format." />
+    </div>
   );
 }
 
