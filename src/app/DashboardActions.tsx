@@ -23,7 +23,7 @@ import {
 import { useMemo, useState } from 'react';
 import type { FormEvent, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react';
 import { buildPayload, extractResultLinks, normalizeApiResult, splitUrlLines, toolTabs, urlFieldByTool } from '@/lib/tool-api';
-import type { ApiResult, ToolGroup, ToolTabId } from '@/lib/tool-api';
+import type { ApiResult, ExecutableToolTabId, RecipeTabId, ToolGroup, ToolTabId } from '@/lib/tool-api';
 
 type LoadingKey = ToolTabId | null;
 type ResultMap = Partial<Record<ToolTabId, ApiResult>>;
@@ -50,6 +50,12 @@ const toolIcons: Record<ToolTabId, IconComponent> = {
   screenshot: Image,
   jobStatus: History,
   jobsStatus: History,
+  recipeShort: Sparkles,
+  recipeTranscriptPack: FileText,
+  recipePodcast: FileAudio2,
+  recipeBatchCaptions: FileText,
+  recipeWebPreview: Image,
+  recipeHighlightReel: Film,
 };
 
 const categoryIcons: Record<ToolGroup, IconComponent> = {
@@ -58,6 +64,7 @@ const categoryIcons: Record<ToolGroup, IconComponent> = {
   'Video editing': Film,
   Captions: FileText,
   'Images and pages': Image,
+  'Creative recipes': Sparkles,
   History,
 };
 
@@ -85,7 +92,7 @@ async function postTool(path: string, payload: Record<string, unknown>, token: s
   return readJson(await fetch(path, { method: 'POST', headers, body: JSON.stringify(payload) }));
 }
 
-const apiPaths: Record<Exclude<ToolTabId, 'status'>, string> = {
+const apiPaths: Record<ExecutableToolTabId, string> = {
   metadata: '/api/media/metadata',
   download: '/api/media/download',
   upload: '/api/storage/upload',
@@ -106,11 +113,27 @@ const apiPaths: Record<Exclude<ToolTabId, 'status'>, string> = {
   jobsStatus: '/api/toolkit/jobs/status',
 };
 
+const recipeIds = new Set<ToolTabId>([
+  'recipeShort',
+  'recipeTranscriptPack',
+  'recipePodcast',
+  'recipeBatchCaptions',
+  'recipeWebPreview',
+  'recipeHighlightReel',
+]);
+
+function isRecipeTab(id: ToolTabId): id is RecipeTabId {
+  return recipeIds.has(id);
+}
+
+function isExecutableTab(id: ToolTabId): id is ExecutableToolTabId {
+  return id !== 'status' && !isRecipeTab(id);
+}
+
 export function DashboardActions() {
   const { getToken } = useAuth();
   const [activeTab, setActiveTab] = useState<ToolTabId>('status');
   const [activeCategory, setActiveCategory] = useState<ToolGroup>('Quick tools');
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [results, setResults] = useState<ResultMap>({});
   const [loading, setLoading] = useState<LoadingKey>(null);
   const [formErrors, setFormErrors] = useState<FormErrorMap>({});
@@ -139,7 +162,7 @@ export function DashboardActions() {
     }
   }
 
-  async function submitTool(tool: Exclude<ToolTabId, 'status'>, payload: Record<string, unknown> | Array<Record<string, unknown>>) {
+  async function submitTool(tool: ExecutableToolTabId, payload: Record<string, unknown> | Array<Record<string, unknown>>) {
     setLoading(tool);
     setFormErrors((current) => ({ ...current, [tool]: undefined }));
     try {
@@ -166,7 +189,7 @@ export function DashboardActions() {
     }
   }
 
-  const visibleTabs = useMemo(() => toolTabs.filter((tab) => showAdvanced || !tab.advanced), [showAdvanced]);
+  const visibleTabs = toolTabs;
   const groupedTabs = useMemo(() => {
     const groups = new Map<ToolGroup, typeof toolTabs>();
     for (const tab of visibleTabs) groups.set(tab.group, [...(groups.get(tab.group) ?? []), tab]);
@@ -194,11 +217,8 @@ export function DashboardActions() {
         <div>
           <p className="eyebrow">Choose a task</p>
           <h2 id="tool-heading">What would you like to make?</h2>
-          <p className="muted compactText">Pick one tool, paste a public link, and run it.</p>
+          <p className="muted compactText">All tools are visible. Pick a tool or a recipe, paste your links, and run it.</p>
         </div>
-        <button className="secondary smallButton" type="button" onClick={() => setShowAdvanced((value) => !value)}>
-          {showAdvanced ? 'Hide advanced' : 'Show advanced'}
-        </button>
       </div>
 
       <div className="tabShell categoryShell">
@@ -245,13 +265,124 @@ export function DashboardActions() {
             </div>
 
             {selectedToolId === 'status' ? <StatusPanel loading={loading} onHealth={checkHealth} onSampleCheck={runSampleCheck} /> : null}
-            {selectedToolId !== 'status' ? <ActiveToolForm activeTab={selectedToolId} error={formErrors[selectedToolId]} loading={loading} onError={(message) => setFormErrors((current) => ({ ...current, [selectedToolId]: message }))} onSubmit={(payload) => submitTool(selectedToolId, payload)} /> : null}
+            {isRecipeTab(selectedToolId) ? <RecipePanel recipe={selectedToolId} onOpenTool={setActiveTab} /> : null}
+            {isExecutableTab(selectedToolId) ? <ActiveToolForm activeTab={selectedToolId} error={formErrors[selectedToolId]} loading={loading} onError={(message) => setFormErrors((current) => ({ ...current, [selectedToolId]: message }))} onSubmit={(payload) => submitTool(selectedToolId, payload)} /> : null}
           </div>
         </div>
       </div>
 
       <ResultCard heading={`${activeMeta.label} result`} result={currentResult ?? null} />
     </section>
+  );
+}
+
+type RecipeStep = {
+  tool: ExecutableToolTabId;
+  label: string;
+  note: string;
+};
+
+type RecipeDefinition = {
+  title: string;
+  outcome: string;
+  when: string;
+  steps: RecipeStep[];
+};
+
+const recipes: Record<RecipeTabId, RecipeDefinition> = {
+  recipeShort: {
+    title: 'Captioned short from a long video',
+    outcome: 'Make a short social clip with readable captions and a cover image.',
+    when: 'Use this for YouTube clips, interviews, lessons, webinars, or any long video that has one good moment inside it.',
+    steps: [
+      { tool: 'download', label: 'Save the source', note: 'Bring a YouTube or remote video link into the app first if needed.' },
+      { tool: 'trim', label: 'Keep the best part', note: 'Cut the video down to the short moment you want.' },
+      { tool: 'transcribe', label: 'Make subtitles', note: 'Create text and SRT subtitle files from the clip.' },
+      { tool: 'caption', label: 'Burn captions in', note: 'Put the subtitles directly onto the video.' },
+      { tool: 'thumbnail', label: 'Make a cover', note: 'Save a strong frame as the thumbnail.' },
+    ],
+  },
+  recipeTranscriptPack: {
+    title: 'Transcript pack from video or podcast',
+    outcome: 'Create audio, text, and subtitles from a video or podcast.',
+    when: 'Use this when you want notes, searchable text, captions, or source material for blog/social posts.',
+    steps: [
+      { tool: 'download', label: 'Save the media', note: 'Use this for remote links or YouTube sources.' },
+      { tool: 'mp3', label: 'Make audio', note: 'Create an MP3 that is easier to reuse.' },
+      { tool: 'transcribe', label: 'Create text and SRT', note: 'Turn speech into text and subtitle files.' },
+      { tool: 'jobsStatus', label: 'Collect outputs', note: 'Check recent results if the work ran as a longer job.' },
+    ],
+  },
+  recipePodcast: {
+    title: 'Podcast assembly',
+    outcome: 'Build one clean episode from intro, body audio, pauses, and outro.',
+    when: 'Use this when episode parts are separate files and need consistent spacing.',
+    steps: [
+      { tool: 'convert', label: 'Normalize formats', note: 'Convert parts into the same audio format if needed.' },
+      { tool: 'silence', label: 'Add breathing room', note: 'Add quiet gaps before, between, or after parts.' },
+      { tool: 'audioJoin', label: 'Join audio', note: 'Combine intro, episode, and outro in order.' },
+      { tool: 'metadata', label: 'Check the result', note: 'Confirm duration and basic file information.' },
+    ],
+  },
+  recipeBatchCaptions: {
+    title: 'Batch captions for many videos',
+    outcome: 'Create subtitles or captioned videos for many links with the same settings.',
+    when: 'Use this for social media batches, lesson batches, or recurring creator workflows.',
+    steps: [
+      { tool: 'transcribe', label: 'Bulk transcribe', note: 'Turn on Bulk links and create subtitle files for many videos.' },
+      { tool: 'caption', label: 'Bulk caption', note: 'Use the same style settings on each video.' },
+      { tool: 'jobsStatus', label: 'Review jobs', note: 'Check recent outputs and failed items.' },
+    ],
+  },
+  recipeWebPreview: {
+    title: 'Page preview video',
+    outcome: 'Turn a webpage into a short moving preview clip.',
+    when: 'Use this for product pages, landing pages, app screens, or quick promo assets.',
+    steps: [
+      { tool: 'screenshot', label: 'Capture the page', note: 'Take a clean screenshot of the page.' },
+      { tool: 'imageVideo', label: 'Animate it', note: 'Turn the screenshot into a short zooming video.' },
+      { tool: 'convert', label: 'Choose final format', note: 'Convert if you need MP4, WEBM, GIF, or another format.' },
+    ],
+  },
+  recipeHighlightReel: {
+    title: 'Highlight reel from several clips',
+    outcome: 'Cut several good moments, join them, caption them, and make a cover.',
+    when: 'Use this for testimonials, event recaps, sports clips, tutorials, or creator highlights.',
+    steps: [
+      { tool: 'cut', label: 'Cut the moments', note: 'Keep exact time ranges from each source.' },
+      { tool: 'videoJoin', label: 'Join the clips', note: 'Combine the clips into one reel.' },
+      { tool: 'caption', label: 'Add captions', note: 'Make spoken parts readable without sound.' },
+      { tool: 'thumbnail', label: 'Make a cover', note: 'Save a strong frame for sharing.' },
+    ],
+  },
+};
+
+function RecipePanel({ recipe, onOpenTool }: { recipe: RecipeTabId; onOpenTool: (tool: ToolTabId) => void }) {
+  const details = recipes[recipe];
+  return (
+    <div className="recipePanel">
+      <div className="recipeHero">
+        <Sparkles aria-hidden="true" size={22} />
+        <div>
+          <h3>{details.title}</h3>
+          <p>{details.outcome}</p>
+          <p className="muted smallNote">{details.when}</p>
+        </div>
+      </div>
+      <ol className="recipeSteps">
+        {details.steps.map((step, index) => (
+          <li key={`${step.tool}-${index}`}>
+            <span className="recipeNumber">{index + 1}</span>
+            <div>
+              <strong>{step.label}</strong>
+              <p>{step.note}</p>
+            </div>
+            <button className="secondary smallButton" type="button" onClick={() => onOpenTool(step.tool)}>Open tool</button>
+          </li>
+        ))}
+      </ol>
+      <p className="muted smallNote">First pass: recipes guide you through existing tools. Later this can become one-click chaining with saved intermediate outputs.</p>
+    </div>
   );
 }
 
@@ -278,7 +409,7 @@ type ToolFormProps = {
   onSubmit: (payload: Record<string, unknown> | Array<Record<string, unknown>>) => void;
 };
 
-function ActiveToolForm({ activeTab, ...props }: ToolFormProps & { activeTab: Exclude<ToolTabId, 'status'> }) {
+function ActiveToolForm({ activeTab, ...props }: ToolFormProps & { activeTab: ExecutableToolTabId }) {
   switch (activeTab) {
     case 'metadata':
       return <ToolForm {...props} tool="metadata" submitLabel="Get file details" fields={<UrlField name="media_url" label="Media link" />} />;
@@ -319,7 +450,7 @@ function ActiveToolForm({ activeTab, ...props }: ToolFormProps & { activeTab: Ex
   }
 }
 
-function ToolForm({ loading, tool, fields, submitLabel, error, onError, onSubmit }: ToolFormProps & { tool: Exclude<ToolTabId, 'status'>; fields: ReactNode; submitLabel: string }) {
+function ToolForm({ loading, tool, fields, submitLabel, error, onError, onSubmit }: ToolFormProps & { tool: ExecutableToolTabId; fields: ReactNode; submitLabel: string }) {
   const bulkField = urlFieldByTool[tool];
   const [runMode, setRunMode] = useState<'single' | 'bulk'>('single');
 

@@ -17,9 +17,24 @@ export type ToolTabId =
   | 'screenshot'
   | 'assStyle'
   | 'jobStatus'
-  | 'jobsStatus';
+  | 'jobsStatus'
+  | 'recipeShort'
+  | 'recipeTranscriptPack'
+  | 'recipePodcast'
+  | 'recipeBatchCaptions'
+  | 'recipeWebPreview'
+  | 'recipeHighlightReel';
 
-export type ToolGroup = 'Quick tools' | 'Audio and text' | 'Video editing' | 'Captions' | 'Images and pages' | 'History';
+export type RecipeTabId =
+  | 'recipeShort'
+  | 'recipeTranscriptPack'
+  | 'recipePodcast'
+  | 'recipeBatchCaptions'
+  | 'recipeWebPreview'
+  | 'recipeHighlightReel';
+export type ExecutableToolTabId = Exclude<ToolTabId, 'status' | RecipeTabId>;
+
+export type ToolGroup = 'Quick tools' | 'Audio and text' | 'Video editing' | 'Captions' | 'Images and pages' | 'Creative recipes' | 'History';
 
 export type ToolTab = {
   id: ToolTabId;
@@ -75,11 +90,17 @@ export const toolTabs: ToolTab[] = [
   { id: 'videoJoin', label: 'Join videos', description: 'Combine several video links into one video.', group: 'Video editing' },
   { id: 'thumbnail', label: 'Thumbnail', description: 'Save an image from a video.', group: 'Video editing' },
   { id: 'caption', label: 'Caption video', description: 'Burn simple subtitles onto a video.', group: 'Captions' },
-  { id: 'assStyle', label: 'Subtitle style file', description: 'Create an advanced subtitle style file for caption workflows.', group: 'Captions', advanced: true },
+  { id: 'assStyle', label: 'Subtitle style file', description: 'Create a subtitle style file for caption workflows.', group: 'Captions' },
   { id: 'imageVideo', label: 'Image to video', description: 'Turn an image link into a short zooming social clip.', group: 'Images and pages' },
   { id: 'screenshot', label: 'Screenshot webpage', description: 'Capture a webpage you own or have permission to capture.', group: 'Images and pages' },
-  { id: 'jobStatus', label: 'Job status', description: 'Check one long-running job by its job ID.', group: 'History', advanced: true },
-  { id: 'jobsStatus', label: 'Job history', description: 'See recent toolkit job status files.', group: 'History', advanced: true },
+  { id: 'recipeShort', label: 'Captioned short', description: 'Turn a long video into a short clip with captions and a thumbnail.', group: 'Creative recipes' },
+  { id: 'recipeTranscriptPack', label: 'Transcript pack', description: 'Create text, subtitles, and audio from a video or podcast.', group: 'Creative recipes' },
+  { id: 'recipePodcast', label: 'Podcast assembly', description: 'Clean up audio, add pauses, and join intro/body/outro.', group: 'Creative recipes' },
+  { id: 'recipeBatchCaptions', label: 'Batch captions', description: 'Caption many videos with the same settings.', group: 'Creative recipes' },
+  { id: 'recipeWebPreview', label: 'Page preview video', description: 'Turn a webpage screenshot into a short promo video.', group: 'Creative recipes' },
+  { id: 'recipeHighlightReel', label: 'Highlight reel', description: 'Cut several clips, join them, caption them, and make a cover.', group: 'Creative recipes' },
+  { id: 'jobStatus', label: 'Job status', description: 'Check one long-running job by its job ID.', group: 'History' },
+  { id: 'jobsStatus', label: 'Job history', description: 'See recent toolkit job status files.', group: 'History' },
 ];
 
 const numericFields = new Set([

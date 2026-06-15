@@ -15,7 +15,12 @@ describe('tool API helpers', () => {
     expect(ids).toContain('audioJoin');
     expect(ids).toContain('silence');
     expect(ids).toContain('jobStatus');
+    expect(ids).toContain('recipeShort');
+    expect(ids).toContain('recipeTranscriptPack');
+    expect(ids).toContain('recipePodcast');
     expect(ids).not.toContain('python');
+    expect(toolTabs.some((tab) => tab.group === 'Creative recipes')).toBe(true);
+    expect(toolTabs.some((tab) => tab.advanced)).toBe(false);
     expect(toolTabs.every((tab) => tab.label.length > 0 && tab.description.length > 0 && tab.group.length > 0)).toBe(true);
   });
 
