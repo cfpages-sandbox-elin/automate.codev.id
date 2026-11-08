@@ -1,36 +1,17 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NCA Toolkit Web UI (Decommissioned)
 
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> [!NOTE]
+> **Decommissioned 2026-11-09**: The Next.js web application and Cloudflare Pages project for `automate.codev.id` have been decommissioned in favor of an agent-native, headless CLI: **`nca`**.
+>
+> All backend media capabilities (Whisper transcription, FFmpeg transcoding, video cutting/trimming, subtitle burning, Playwright screenshots, and AI clip factory) remain active on OracleServer via `https://api.codev.id/nca`.
+>
+> AI coding assistants and automation scripts can drive the toolkit directly via the `nca-toolkit` skill or terminal:
+> ```bash
+> nca health
+> nca transcribe "<media_url>" --language id
+> nca clip-factory "<source_url>" --transcript "transcript.txt"
+> ```
+> Documentation:
+> - Skill: `SKILLS/nca-toolkit/SKILL.md`
+> - Migration Guide: `KNOWLEDGE/KNOWLEDGE-CODYNC-AND-AUTOMATE-HEADLESS-MIGRATION.md`
+> - CLI Script: `C:\Users\THINKPAD\scripts\nca-cli.py` (`nca.cmd` / `nca.ps1`)
